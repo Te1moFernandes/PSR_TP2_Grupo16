@@ -9,12 +9,14 @@ from colorama import *
 #callback para as trackbars
 def change_color(x):
     	#condition to change color if trackbar value is greater than 127 
-	if cv2.getTrackbarPos('Red_max','frame')>127:
-		print(">127")
-	else:
-		print("<127")
-
-
+    if cv2.getTrackbarPos('Red_max','frame')<cv2.getTrackbarPos('Red_min','frame'):
+        cv2.setTrackbarPos('Red_max','frame',cv2.getTrackbarPos('Red_min','frame'))
+    if cv2.getTrackbarPos('Blue_max','frame')<cv2.getTrackbarPos('Blue_min','frame'):
+        cv2.setTrackbarPos('Blue_max','frame',cv2.getTrackbarPos('Blue_min','frame'))
+    if cv2.getTrackbarPos('Green_max','frame')<cv2.getTrackbarPos('Green_min','frame'):
+        cv2.setTrackbarPos('Green_max','frame',cv2.getTrackbarPos('Green_min','frame'))
+    
+    cv2.threshold
 def write_to_file():
     global data
     data['limits']['R']['max'] = cv2.getTrackbarPos('Red_max','frame')
@@ -28,10 +30,24 @@ def write_to_file():
         json.dump(data, outfile)
 
 
-def main():
+def limit_image(B,G,R):
+    _, thresh1 = cv2.threshold(B,cv2.getTrackbarPos('Blue_max','frame'),255,cv2.THRESH_BINARY_INV)
+    _, thresh2 = cv2.threshold(B,cv2.getTrackbarPos('Blue_min','frame'),255,cv2.THRESH_BINARY)
+    _, thresh3 = cv2.threshold(G,cv2.getTrackbarPos('Red_max','frame'),255,cv2.THRESH_BINARY_INV)
+    _, thresh4 = cv2.threshold(G,cv2.getTrackbarPos('Red_min','frame'),255,cv2.THRESH_BINARY)
+    _, thresh5 = cv2.threshold(R,cv2.getTrackbarPos('Green_max','frame'),255,cv2.THRESH_BINARY_INV)
+    _, thresh6 = cv2.threshold(R,cv2.getTrackbarPos('Green_min','frame'),255,cv2.THRESH_BINARY)
+
+    thresh_blue=cv2.bitwise_and(thresh1,thresh2)
+    thresh_red=cv2.bitwise_and(thresh3,thresh4)
+    thresh_green=cv2.bitwise_and(thresh5,thresh6)
+    final_thresh=cv2.bitwise_and(thresh_blue,thresh_green)
+    final_thresh=cv2.bitwise_and(final_thresh,thresh_red)
+    return final_thresh
+
+def main(data):
     vid = cv2.VideoCapture(0)
     cv2.namedWindow("frame", cv2.WINDOW_AUTOSIZE)
-
     cv2.createTrackbar('Red_max','frame',data['limits']['R']['max'],255,change_color)
     cv2.createTrackbar('Red_min','frame',data['limits']['R']['min'],255,change_color)
     cv2.createTrackbar('Green_max','frame',data['limits']['G']['max'],255,change_color)
@@ -43,7 +59,8 @@ def main():
         
         # Capture the video frame by frame
         ret, frame = vid.read()
-    
+        (B,G,R) = cv2.split(frame)
+        img_w_thresh=limit_image(B,G,R)
         # Display the resulting frame
         cv2.imshow('frame', frame)
         
@@ -60,13 +77,3 @@ def main():
     vid.release()
     # Destroy all the windows
     cv2.destroyAllWindows()
-
-try:
-    f = open('limits.json',)
-    data = json.load(f)
-except:
-    print(Fore.RED+"Could not read file as json\nClosing program..."+Style.RESET_ALL)
-    sys.exit(1)
-
-if __name__ == "__main__":
-    main()
