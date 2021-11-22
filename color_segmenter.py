@@ -61,12 +61,12 @@ def main(data):
     cv2.createTrackbar('Blue_max',windowname,data['limits']['B']['max'],255,change_color)
     cv2.createTrackbar('Blue_min',windowname,data['limits']['B']['min'],255,change_color)
 
-    while(True):
+    while True:
         
         # Capture the video frame by frame
         ret, frame = vid.read()
-        (B,G,R) = cv2.split(frame)
-        img_w_thresh=limit_image(B,G,R)
+        (B, G, R) = cv2.split(frame)
+        img_w_thresh= limit_image(B, G, R)
         # Display the resulting frame
         cv2.imshow('frame', frame)
         
