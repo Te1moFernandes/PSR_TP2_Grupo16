@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import argparse
+
+import numpy as np
 from colorama import *
 import sys
 import json
@@ -19,5 +21,5 @@ except:
     print(Fore.RED+"Could not read file as json\nClosing program..."+Style.RESET_ALL)
     sys.exit(1)
 
-img_1 = np.zeros([512,512,1],dtype=np.uint8)
+img_1 = np.zeros([512, 512, 1], dtype=np.uint8)
 img_1.fill(255)
