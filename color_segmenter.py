@@ -47,14 +47,15 @@ def limit_image(B,G,R):
 
 def main(data):
     vid = cv2.VideoCapture(0)
-    cv2.namedWindow("frame", cv2.WINDOW_AUTOSIZE)
-    cv2.createTrackbar('Red_max','frame',data['limits']['R']['max'],255,change_color)
-    cv2.createTrackbar('Red_min','frame',data['limits']['R']['min'],255,change_color)
-    cv2.createTrackbar('Green_max','frame',data['limits']['G']['max'],255,change_color)
-    cv2.createTrackbar('Green_min','frame',data['limits']['G']['min'],255,change_color)
-    cv2.createTrackbar('Blue_max','frame',data['limits']['B']['max'],255,change_color)
-    cv2.createTrackbar('Blue_min','frame',data['limits']['B']['min'],255,change_color)
-
+    windowname='frame'
+    cv2.namedWindow(windowname, cv2.WINDOW_AUTOSIZE)
+    cv2.createTrackbar('Red_max',windowname,data['limits']['R']['max'],255,change_color)
+    cv2.createTrackbar('Red_min',windowname,data['limits']['R']['min'],255,change_color)
+    cv2.createTrackbar('Green_max',windowname,data['limits']['G']['max'],255,change_color)
+    cv2.createTrackbar('Green_min',windowname,data['limits']['G']['min'],255,change_color)
+    cv2.createTrackbar('Blue_max',windowname,data['limits']['B']['max'],255,change_color)
+    cv2.createTrackbar('Blue_min',windowname,data['limits']['B']['min'],255,change_color)
+    
     while(True):
         
         # Capture the video frame by frame
