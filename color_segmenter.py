@@ -53,9 +53,9 @@ def limit_image(B, G, R):
     return final_thresh
 
 def segment(windowname, frame):
-    B = frame[:, :, 0] #  blue channel
+    R = frame[:, :, 0] #  blue channel
     G = frame[:, :, 1] #  green channel
-    R = frame[:, :, 2] #  red channel
+    B= frame[:, :, 2] #  red channel
     img_w_thresh = limit_image(B, G, R)
 
 

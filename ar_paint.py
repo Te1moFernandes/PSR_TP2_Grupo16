@@ -62,9 +62,9 @@ def draw_with_mouse_pos(event, x, y, flags, param):
     elif event == cv2.EVENT_LBUTTONUP:
         drawing = False
 def segment(data, windowname, frame):
-    B=frame[:,:,0] #blue channel
-    G=frame[:,:,1] #green channel
-    R=frame[:,:,2] #red channel
+    R = frame[:,:,0] #blue channel
+    G = frame[:,:,1] #green channel
+    B = frame[:,:,2] #red channel
     img_w_thresh = limit_image(data, B, G, R)
     ret, cX, cY = find_centroid(img_w_thresh)
     # Display the resulting frame
