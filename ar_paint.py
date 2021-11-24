@@ -19,6 +19,9 @@ def change_color(x):
     if cv2.getTrackbarPos('Green_max', windowname) < cv2.getTrackbarPos('Green_min', windowname):
         cv2.setTrackbarPos('Green_max', windowname, cv2.getTrackbarPos('Green_min', windowname))
 
+def change_color_b_min(x):
+    if cv2.getTrackbarPos('Blue_max', windowname) < cv2.getTrackbarPos('Blue_min', windowname):
+        cv2.setTrackbarPos('Blue_min',windowname,cv2.getTrackbarPos('Blue_max', windowname))
 def write_to_file(data):
     global windowname
     data['limits']['R']['max'] = cv2.getTrackbarPos('Red_max',windowname)
@@ -54,22 +57,23 @@ def main():
     cv2.createTrackbar('Green_max', windowname, data['limits']['G']['max'], 255, change_color)
     cv2.createTrackbar('Green_min', windowname, data['limits']['G']['min'], 255, change_color)
     cv2.createTrackbar('Blue_max', windowname, data['limits']['B']['max'], 255, change_color)
-    cv2.createTrackbar('Blue_min', windowname, data['limits']['B']['min'], 255, change_color)
+    cv2.createTrackbar('Bluemin', windowname, data['limits']['B']['min'], 255, change_color_b_min)
 
     video = cv2.VideoCapture(0)
 
     img_1 = np.zeros([int(video.get(4)), int(video.get(3)), 3], dtype=np.uint8)
     img_1.fill(255)
     cv2.imshow("canvas",img_1)
-
+    pos_1=()
     while True:
         ret, frame = video.read()
         cv2.imshow(windowname, frame)
-        ret, pos = color_segmenter.segment(data, windowname, frame)
+        ret, cX, cY = color_segmenter.segment(data, windowname, frame)
         if ret:
-            cv2.circle(img_1, pos, width, color, -1)
-            cv2.imshow("canvas",img_1)
-
+            if len(pos_1):
+                cv2.line(img_1, pos_1, (int(cX),int(cY)), color, width,-1)
+                cv2.imshow("canvas",img_1)
+            pos_1=(int(cX),int(cY))
         key = cv2.waitKey(1)
         # the 'q' button is set as the quitting button and w writes thresholds to file
         if key == ord('q'):
