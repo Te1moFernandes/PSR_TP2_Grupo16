@@ -9,8 +9,6 @@ import json
 from math import sqrt
 
 
-def draw_with_mouse(event, x, y, flags, param):
-    pass
 
 
 def find_centroid(th):
@@ -50,8 +48,21 @@ def limit_image(data, B, G, R):
     
     return final_thresh
 
+
+def draw_with_mouse_pos(event,x,y,flags,param):
+    global pos_1, color, width, drawing
+    if event == cv2.EVENT_LBUTTONDOWN:
+        drawing = True
+        ix,iy = x,y
+    elif event == cv2.EVENT_MOUSEMOVE:
+        if drawing == True:
+            if not sqrt((pos_1[0]-x)**2+(pos_1[1]-y)**2)>20:
+                cv2.line(param,pos_1,(x,y),color,width)
+                cv2.imshow('canvas', param)
+        pos_1=(x,y)
+    elif event == cv2.EVENT_LBUTTONUP:
+        drawing = False
 def segment(data, windowname, frame):
-    
     B=frame[:,:,0] #blue channel
     G=frame[:,:,1] #green channel
     R=frame[:,:,2] #red channel
@@ -61,12 +72,12 @@ def segment(data, windowname, frame):
     return ret, cX, cY
 
 def main():
-    global windowname, color, width
+    global windowname, color, width, pos_1
+    use_mouse=False
     parser = argparse.ArgumentParser(description='PSR argparse example.')
     parser.add_argument('-j', '--json', default='limits.json', help="Full path to json file.")
     parser.add_argument('-usp', '--use_shake_prevention', action='store_true', help="If used, shake detection is activated")
     args = vars(parser.parse_args())
-    print(args)
     try:
         f = open(args['json'], )
         data = json.load(f)
@@ -81,20 +92,20 @@ def main():
     img_1 = np.zeros([int(video.get(4)), int(video.get(3)), 3], dtype=np.uint8)
     img_1.fill(255)
     cv2.imshow("canvas",img_1)
-    cv2.setMouseCallback("canvas",draw_with_mouse)
-    pos_1=()
+
     while True:
         ret, frame = video.read()
         cv2.imshow(windowname, frame)
-        ret, cX, cY = segment(data, windowname, frame)
-        if ret:
-            if len(pos_1):
-                    if args['use_shake_prevention'] and sqrt((pos_1[0]-cX)**2+(pos_1[1]-cY)**2)>20:
-                        pos_1=()
-                    if len(pos_1):                    
-                        cv2.line(img_1, pos_1, (int(cX),int(cY)), color, width,-1)
-                        cv2.imshow("canvas",img_1)
-            pos_1=(int(cX),int(cY))
+        if not use_mouse:
+            ret, cX, cY = segment(data, windowname, frame)
+            if ret:
+                if len(pos_1):
+                        if args['use_shake_prevention'] and sqrt((pos_1[0]-cX)**2+(pos_1[1]-cY)**2)>20:
+                            pos_1=()
+                        if len(pos_1):                    
+                            cv2.line(img_1, pos_1, (int(cX),int(cY)), color, width,-1)
+                            cv2.imshow("canvas",img_1)
+                pos_1=(int(cX),int(cY))
         key = cv2.waitKey(1)
         # the 'q' button is set as the quitting button and w writes thresholds to file
         if key == ord('q'):
@@ -116,8 +127,13 @@ def main():
         elif key == ord('c'):
             img_1.fill(255)
             cv2.imshow("canvas",img_1)
-
-        # After the loop release the cap object
+        if args['use_shake_prevention'] and key == ord('m'):
+            if use_mouse:
+                use_mouse=False
+            else:
+                cv2.setMouseCallback('canvas',draw_with_mouse_pos, img_1)
+                use_mouse=True
+    # After the loop release the cap object
     video.release()
     # Destroy all the windows
     cv2.destroyAllWindows()
@@ -126,6 +142,8 @@ def main():
 windowname = 'frame'
 color=(255,0,0)
 width=2
+pos_1=()
+drawing=False
 
 if __name__ == '__main__':
     main()
