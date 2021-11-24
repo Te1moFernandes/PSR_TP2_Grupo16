@@ -6,80 +6,100 @@ import numpy as np
 from colorama import *
 import sys
 import json
-import color_segmenter
+from math import sqrt
 
 
-def change_color(x):
-    global windowname
-    #condition to change color if trackbar value is greater than 127
-    if cv2.getTrackbarPos('Red_max', windowname) < cv2.getTrackbarPos('Red_min', windowname):
-        cv2.setTrackbarPos('Red_max', windowname, cv2.getTrackbarPos('Red_min', windowname))
-    if cv2.getTrackbarPos('Blue_max', windowname) < cv2.getTrackbarPos('Blue_min', windowname):
-        cv2.setTrackbarPos('Blue_max', windowname, cv2.getTrackbarPos('Blue_min', windowname))
-    if cv2.getTrackbarPos('Green_max', windowname) < cv2.getTrackbarPos('Green_min', windowname):
-        cv2.setTrackbarPos('Green_max', windowname, cv2.getTrackbarPos('Green_min', windowname))
+def draw_with_mouse(event, x, y, flags, param):
+    pass
 
-def change_color_b_min(x):
-    if cv2.getTrackbarPos('Blue_max', windowname) < cv2.getTrackbarPos('Blue_min', windowname):
-        cv2.setTrackbarPos('Blue_min',windowname,cv2.getTrackbarPos('Blue_max', windowname))
-def write_to_file(data):
-    global windowname
-    data['limits']['R']['max'] = cv2.getTrackbarPos('Red_max',windowname)
-    data['limits']['R']['min'] = cv2.getTrackbarPos('Red_min',windowname)
-    data['limits']['G']['max'] = cv2.getTrackbarPos('Green_max',windowname)
-    data['limits']['G']['min'] = cv2.getTrackbarPos('Green_min',windowname)
-    data['limits']['B']['max'] = cv2.getTrackbarPos('Blue_max',windowname)
-    data['limits']['B']['min'] = cv2.getTrackbarPos('Blue_min',windowname)
-    print("Escreveu as seguintes configurações:")
-    print(data)
-    with open('limits.json', 'w') as outfile:
-        json.dump(data, outfile)
 
+def find_centroid(th):
+    ret=False
+    contours, hierarchy = cv2.findContours(th, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    cX=0
+    cY=0
+    connectivity = 4  
+    output = cv2.connectedComponentsWithStats(th, connectivity, cv2.CV_32S)
+    max_area=-1
+    index=None
+    if output[0]<=1:
+        return ret, None, None
+    for i in range(1,output[0]):
+        if output[2][i,cv2.CC_STAT_AREA]>max_area:
+            index=i
+            max_area=output[2][i,cv2.CC_STAT_AREA]
+            ret=True
+    return ret, output[3][index][0], output[3][index][1]
+
+
+def limit_image(data, B, G, R):
+    _, thresh1 = cv2.threshold(B, data['limits']['B']['max'], 255, cv2.THRESH_BINARY_INV)
+    _, thresh2 = cv2.threshold(B, data['limits']['B']['min'], 255, cv2.THRESH_BINARY)
+    _, thresh3 = cv2.threshold(G, data['limits']['R']['max'], 255, cv2.THRESH_BINARY_INV)
+    _, thresh4 = cv2.threshold(G, data['limits']['R']['min'], 255, cv2.THRESH_BINARY)
+    _, thresh5 = cv2.threshold(R, data['limits']['G']['max'], 255, cv2.THRESH_BINARY_INV)
+    _, thresh6 = cv2.threshold(R, data['limits']['G']['min'], 255, cv2.THRESH_BINARY)
+
+    thresh_blue = cv2.bitwise_and(thresh1, thresh2)
+    thresh_red = cv2.bitwise_and(thresh3, thresh4)
+    thresh_green = cv2.bitwise_and(thresh5, thresh6)
+    
+    final_thresh = cv2.bitwise_and(thresh_blue, thresh_green)
+    final_thresh = cv2.bitwise_and(final_thresh, thresh_red)
+    cv2.imshow('image', final_thresh)
+    
+    return final_thresh
+
+def segment(data, windowname, frame):
+    
+    B=frame[:,:,0] #blue channel
+    G=frame[:,:,1] #green channel
+    R=frame[:,:,2] #red channel
+    img_w_thresh = limit_image(data, B, G, R)
+    ret, cX, cY = find_centroid(img_w_thresh)
+    # Display the resulting frame
+    return ret, cX, cY
 
 def main():
     global windowname, color, width
     parser = argparse.ArgumentParser(description='PSR argparse example.')
     parser.add_argument('-j', '--json', default='limits.json', help="Full path to json file.")
+    parser.add_argument('-usp', '--use_shake_prevention', action='store_true', help="If used, shake detection is activated")
     args = vars(parser.parse_args())
-    print(args['json'])
+    print(args)
     try:
         f = open(args['json'], )
-        print("gets f")
         data = json.load(f)
         print(data)
     except:
         print(Fore.RED + "Could not read file as json\nClosing program..." + Style.RESET_ALL)
         sys.exit(1)
 
-    cv2.namedWindow(windowname, cv2.WINDOW_AUTOSIZE)
-    cv2.createTrackbar('Red_max', windowname, data['limits']['R']['max'], 255, change_color)
-    cv2.createTrackbar('Red_min', windowname, data['limits']['R']['min'], 255, change_color)
-    cv2.createTrackbar('Green_max', windowname, data['limits']['G']['max'], 255, change_color)
-    cv2.createTrackbar('Green_min', windowname, data['limits']['G']['min'], 255, change_color)
-    cv2.createTrackbar('Blue_max', windowname, data['limits']['B']['max'], 255, change_color)
-    cv2.createTrackbar('Bluemin', windowname, data['limits']['B']['min'], 255, change_color_b_min)
 
     video = cv2.VideoCapture(0)
 
     img_1 = np.zeros([int(video.get(4)), int(video.get(3)), 3], dtype=np.uint8)
     img_1.fill(255)
     cv2.imshow("canvas",img_1)
+    cv2.setMouseCallback("canvas",draw_with_mouse)
     pos_1=()
     while True:
         ret, frame = video.read()
         cv2.imshow(windowname, frame)
-        ret, cX, cY = color_segmenter.segment(data, windowname, frame)
+        ret, cX, cY = segment(data, windowname, frame)
         if ret:
             if len(pos_1):
-                cv2.line(img_1, pos_1, (int(cX),int(cY)), color, width,-1)
-                cv2.imshow("canvas",img_1)
+                    if args['use_shake_prevention'] and sqrt((pos_1[0]-cX)**2+(pos_1[1]-cY)**2)>20:
+                        pos_1=()
+                    if len(pos_1):                    
+                        cv2.line(img_1, pos_1, (int(cX),int(cY)), color, width,-1)
+                        cv2.imshow("canvas",img_1)
             pos_1=(int(cX),int(cY))
         key = cv2.waitKey(1)
         # the 'q' button is set as the quitting button and w writes thresholds to file
         if key == ord('q'):
             break
         elif key == ord('w'):
-            print("writes")
             write_to_file(data)
         elif key == ord('+'):
             if width<16:
