@@ -18,12 +18,12 @@ def change_color(x):
 
 def write_to_file(data):
     global windowname
-    data['limits']['R']['max'] = cv2.getTrackbarPos('Red_max',windowname)
-    data['limits']['R']['min'] = cv2.getTrackbarPos('Red_min',windowname)
-    data['limits']['G']['max'] = cv2.getTrackbarPos('Green_max',windowname)
-    data['limits']['G']['min'] = cv2.getTrackbarPos('Green_min',windowname)
-    data['limits']['B']['max'] = cv2.getTrackbarPos('Blue_max',windowname)
-    data['limits']['B']['min'] = cv2.getTrackbarPos('Blue_min',windowname)
+    data['limits']['R']['max'] = cv2.getTrackbarPos('Red_max', windowname)
+    data['limits']['R']['min'] = cv2.getTrackbarPos('Red_min', windowname)
+    data['limits']['G']['max'] = cv2.getTrackbarPos('Green_max', windowname)
+    data['limits']['G']['min'] = cv2.getTrackbarPos('Green_min', windowname)
+    data['limits']['B']['max'] = cv2.getTrackbarPos('Blue_max', windowname)
+    data['limits']['B']['min'] = cv2.getTrackbarPos('Blue_min', windowname)
     print("Escreveu as seguintes configurações:")
     print(data)
     with open('limits.json', 'w') as outfile:
@@ -53,9 +53,9 @@ def limit_image(B, G, R):
     return final_thresh
 
 def segment(windowname, frame):
-    B=frame[:,:,0] #blue channel
-    G=frame[:,:,1] #green channel
-    R=frame[:,:,2] #red channel
+    B = frame[:, :, 0] #  blue channel
+    G = frame[:, :, 1] #  green channel
+    R = frame[:, :, 2] #  red channel
     img_w_thresh = limit_image(B, G, R)
 
 
