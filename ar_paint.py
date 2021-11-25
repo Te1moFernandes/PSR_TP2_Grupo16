@@ -69,7 +69,6 @@ def main ():
     parser = argparse.ArgumentParser(description='PSR argparse example.')
     parser.add_argument('-j', '--json', default='limits.json', help="Full path to json file.")
     parser.add_argument('-usp', '--use_shake_prevention', action='store_true', help="If used, shake detection is activated")
-    parser.add_argument('-uvab', '--use_video_as_board', action='store_true', help="Draws in the video capture instead of the white canvas")
     args = vars(parser.parse_args())
     try:
         f = open(args['json'], )
