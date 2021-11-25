@@ -5,6 +5,8 @@ import json
 import sys
 from colorama import *
 import argparse
+import numpy as np
+
 
 def change_color(x):
     global windowname
@@ -30,33 +32,17 @@ def write_to_file(data):
         json.dump(data, outfile)
 
 
-def limit_image(B, G, R):
-    _, thresh1 = cv2.threshold(B, cv2.getTrackbarPos('Blue_max', 'frame'), 255, cv2.THRESH_BINARY_INV)
-    _, thresh2 = cv2.threshold(B, cv2.getTrackbarPos('Blue_min', 'frame'), 255, cv2.THRESH_BINARY)
-    _, thresh3 = cv2.threshold(G, cv2.getTrackbarPos('Red_max', 'frame'), 255, cv2.THRESH_BINARY_INV)
-    _, thresh4 = cv2.threshold(G, cv2.getTrackbarPos('Red_min', 'frame'), 255, cv2.THRESH_BINARY)
-    _, thresh5 = cv2.threshold(R, cv2.getTrackbarPos('Green_max', 'frame'), 255, cv2.THRESH_BINARY_INV)
-    _, thresh6 = cv2.threshold(R, cv2.getTrackbarPos('Green_min', 'frame'), 255, cv2.THRESH_BINARY)
+def limit_image(frame):
 
-    thresh_blue = cv2.bitwise_and(thresh1, thresh2)
-    cv2.imshow('blue', thresh_blue)
 
-    thresh_red = cv2.bitwise_and(thresh3, thresh4)
-    cv2.imshow('red', thresh_red)
-
-    thresh_green = cv2.bitwise_and(thresh5, thresh6)
-    cv2.imshow('green', thresh_green)
-
-    final_thresh = cv2.bitwise_and(thresh_blue, thresh_green)
-    final_thresh = cv2.bitwise_and(final_thresh, thresh_red)
+    lower_lim = np.array([cv2.getTrackbarPos('Blue_min', windowname), cv2.getTrackbarPos('Green_min', windowname), cv2.getTrackbarPos('Red_min', windowname)])
+    upper_lim = np.array([cv2.getTrackbarPos('Blue_max', windowname), cv2.getTrackbarPos('Green_max', windowname), cv2.getTrackbarPos('Red_max', windowname)])
+    
+    final_thresh = cv2.inRange(frame, lower_lim, upper_lim)
     cv2.imshow('image', final_thresh)
+    
     return final_thresh
 
-def segment(windowname, frame):
-    R = frame[:, :, 0] #  blue channel
-    G = frame[:, :, 1] #  green channel
-    B= frame[:, :, 2] #  red channel
-    img_w_thresh = limit_image(B, G, R)
 
 
 
@@ -84,7 +70,7 @@ def main():
     while True:
         ret, frame = video.read()
         cv2.imshow(windowname, frame)
-        segment(windowname, frame)
+        limit_image(frame)
         key = cv2.waitKey(1)
         if key == ord("q"):
             break

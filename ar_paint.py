@@ -29,20 +29,13 @@ def find_centroid(th):
     return ret, output[3][index][0], output[3][index][1]
 
 
-def limit_image(data, B, G, R):
-    _, thresh1 = cv2.threshold(B, data['limits']['B']['max'], 255, cv2.THRESH_BINARY_INV)
-    _, thresh2 = cv2.threshold(B, data['limits']['B']['min'], 255, cv2.THRESH_BINARY)
-    _, thresh3 = cv2.threshold(G, data['limits']['R']['max'], 255, cv2.THRESH_BINARY_INV)
-    _, thresh4 = cv2.threshold(G, data['limits']['R']['min'], 255, cv2.THRESH_BINARY)
-    _, thresh5 = cv2.threshold(R, data['limits']['G']['max'], 255, cv2.THRESH_BINARY_INV)
-    _, thresh6 = cv2.threshold(R, data['limits']['G']['min'], 255, cv2.THRESH_BINARY)
-
-    thresh_blue = cv2.bitwise_and(thresh1, thresh2)
-    thresh_red = cv2.bitwise_and(thresh3, thresh4)
-    thresh_green = cv2.bitwise_and(thresh5, thresh6)
+def limit_image(data, frame):
     
-    final_thresh = cv2.bitwise_and(thresh_blue, thresh_green)
-    final_thresh = cv2.bitwise_and(final_thresh, thresh_red)
+
+    lower_lim = np.array([int(data['limits']['B']['min']), int(data['limits']['G']['min']), int(data['limits']['R']['min'])])
+    upper_lim = np.array([int(data['limits']['B']['max']), int(data['limits']['G']['max']), int(data['limits']['R']['max'])])
+    
+    final_thresh = cv2.inRange(frame, lower_lim, upper_lim)
     cv2.imshow('image', final_thresh)
     
     return final_thresh
@@ -61,14 +54,14 @@ def draw_with_mouse_pos(event, x, y, flags, param):
         pos_1 = (x, y)
     elif event == cv2.EVENT_LBUTTONUP:
         drawing = False
+
+
 def segment(data, windowname, frame):
-    R = frame[:,:,0] #blue channel
-    G = frame[:,:,1] #green channel
-    B = frame[:,:,2] #red channel
-    img_w_thresh = limit_image(data, B, G, R)
+    img_w_thresh = limit_image(data, frame)
     ret, cX, cY = find_centroid(img_w_thresh)
     # Display the resulting frame
     return ret, cX, cY
+
 
 def main ():
     global windowname, color, width, pos_1
@@ -76,6 +69,7 @@ def main ():
     parser = argparse.ArgumentParser(description='PSR argparse example.')
     parser.add_argument('-j', '--json', default='limits.json', help="Full path to json file.")
     parser.add_argument('-usp', '--use_shake_prevention', action='store_true', help="If used, shake detection is activated")
+    parser.add_argument('-uvab', '--use_video_as_board', action='store_true', help="Draws in the video capture instead of the white canvas")
     args = vars(parser.parse_args())
     try:
         f = open(args['json'], )
@@ -85,13 +79,21 @@ def main ():
         print(Fore.RED + "Could not read file as json\nClosing program..." + Style.RESET_ALL)
         sys.exit(1)
 
-
+    print("Press '+' to increase line width;")
+    print("Press '-' to decrease line width;")
+    print("Press 'w' to save current drawing;")
+    print("Press 'g' to to change line color to green;")
+    print("Press 'r' to to change line color to red;")
+    print("Press 'b' to to change line color to blue;")
+    print("Press 'c' to clear drawing;")
+    if args['use_shake_prevention']:
+        print("Press 'm' to toggle between mouse drawing and camera centroid drawing;")
+    print(Fore.RED+"Press 'q' to quit the program"+Style.RESET_ALL)
     video = cv2.VideoCapture(0)
 
     img_1 = np.zeros([int(video.get(4)), int(video.get(3)), 3], dtype=np.uint8)
     img_1.fill(255)
     cv2.imshow("canvas", img_1)
-
     while True:
         ret, frame = video.read()
         cv2.imshow(windowname, frame)
@@ -126,7 +128,7 @@ def main ():
         elif key == ord('c'):
             img_1.fill(255)
             cv2.imshow("canvas", img_1)
-        if args['use_shake_prevention'] and key == ord('m'):
+        elif args['use_shake_prevention'] and key == ord('m'):
             if use_mouse:
                 use_mouse = False
             else:
